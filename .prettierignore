@@ -1,0 +1,6 @@
+# Ignore artifacts:
+dist
+coverage
+
+# Ignore changelog since auto-updated by standard-version
+CHANGELOG.md
