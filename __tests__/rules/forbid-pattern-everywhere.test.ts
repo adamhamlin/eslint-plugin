@@ -1,7 +1,7 @@
 import { TestCaseError } from '@typescript-eslint/utils/dist/ts-eslint';
 import dedent from 'dedent';
 
-import rule from '../../src/rules/forbid-pattern-everywhere';
+import { name, rule } from '../../src/rules/forbid-pattern-everywhere';
 import { ruleTester } from '../rule-tester';
 
 describe('Rule Tests', () => {
@@ -9,7 +9,7 @@ describe('Rule Tests', () => {
         return [{ messageId: `disallowedPattern`, data: { pattern } }];
     }
 
-    ruleTester.run('forbid-pattern-everywhere', rule, {
+    ruleTester.run(name, rule, {
         valid: [
             {
                 // No options/patterns specified

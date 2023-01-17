@@ -1,12 +1,12 @@
 import dedent from 'dedent';
 
-import rule from '../../src/rules/no-empty-block-comment';
+import { name, rule } from '../../src/rules/no-empty-block-comment';
 import { ruleTester } from '../rule-tester';
 
 describe('Rule Tests', () => {
     const errors = [{ messageId: 'nonEmptyBlockComment' as const }];
 
-    ruleTester.run('no-empty-block-comment', rule, {
+    ruleTester.run(name, rule, {
         valid: [
             {
                 code: dedent`

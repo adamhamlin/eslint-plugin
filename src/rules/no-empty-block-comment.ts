@@ -2,8 +2,9 @@ import { TSESTree } from '@typescript-eslint/utils';
 
 import { createRule } from '../utils/create-rule';
 
-export default createRule({
-    name: 'no-empty-block-comment',
+export const name = 'no-empty-block-comment';
+export const rule = createRule({
+    name,
     meta: {
         type: 'layout',
         messages: {
@@ -45,3 +46,5 @@ export default createRule({
         };
     },
 });
+
+export default { name, rule };
