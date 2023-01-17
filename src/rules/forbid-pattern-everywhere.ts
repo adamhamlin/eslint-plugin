@@ -2,8 +2,9 @@ import { TSESTree } from '@typescript-eslint/utils';
 
 import { createRule } from '../utils/create-rule';
 
-export default createRule({
-    name: 'forbid-pattern-everywhere',
+export const name = 'forbid-pattern-everywhere';
+export const rule = createRule({
+    name,
     meta: {
         type: 'layout',
         messages: {
@@ -75,3 +76,5 @@ export default createRule({
         };
     },
 });
+
+export default { name, rule };

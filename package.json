@@ -15,7 +15,7 @@
         "/docs"
     ],
     "scripts": {
-        "prepare": "husky install",
+        "prepare": "husky install && npm run compile",
         "_lint": "eslint --fix",
         "_lint:check": "eslint",
         "eslint-docs": "eslint-doc-generator",
