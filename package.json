@@ -5,7 +5,15 @@
     "keywords": [
         "eslint",
         "eslintplugin",
-        "eslint-plugin"
+        "eslint-plugin",
+        "sort",
+        "sorting",
+        "forbid",
+        "pattern",
+        "everywhere",
+        "empty",
+        "block",
+        "comment"
     ],
     "author": "Adam C. Hamlin",
     "main": "dist/index.js",
@@ -27,7 +35,8 @@
         "watch": "npm run compile -- -watch",
         "test": "jest",
         "pretest:ci": "npm run check",
-        "test:ci": "npm test"
+        "test:ci": "npm test",
+        "view-coverage": "open coverage/lcov-report/index.html"
     },
     "lint-staged": {
         "*.ts": "npm run _lint -- --cache",

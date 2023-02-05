@@ -1,5 +1,6 @@
 # ESLint Plugin
 
+[![npm version](https://badge.fury.io/js/eslint-plugin-adamhamlin.svg)](https://badge.fury.io/js/eslint-plugin-adamhamlin)
 [![CI Status Badge](https://github.com/adamhamlin/eslint-plugin/actions/workflows/ci.yaml/badge.svg)](https://github.com/adamhamlin/eslint-plugin/actions/workflows/ci.yaml)
 
 My collection of miscellaneous custom ESLint rules!
@@ -26,6 +27,7 @@ Then configure the rules you want to use under the rules section.
 {
     "rules": {
         "adamhamlin/no-empty-block-comment": "error",
+        "adamhamlin/opt-in-sort": "error",
         "adamhamlin/forbid-pattern-everywhere": [
             "error",
             {
@@ -40,8 +42,9 @@ Then configure the rules you want to use under the rules section.
 
 This plugin makes the following lint rules available:
 
--   [forbid-pattern-everywhere](./docs/rules/forbid-pattern-everywhere.md) - Specified pattern(s) are disallowed **everywhere**--in variables, functions, literals, property names, classes, types, interfaces, etc.
 -   [no-emppty-block-comment](./docs/rules/no-empty-block-comment.md) - Block comments must have non-empty content.
+-   [opt-in-sort](./docs/rules/opt-in-sort.md) - Enforce sorting of object keys, array values, or TS enums/interfaces/types by adding the `@sort` annotation.
+-   [forbid-pattern-everywhere](./docs/rules/forbid-pattern-everywhere.md) - Specified pattern(s) are disallowed **everywhere**--in variables, functions, literals, property names, classes, types, interfaces, etc.
 
 <!-- begin auto-generated rules list -->
 
