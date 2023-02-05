@@ -46,6 +46,7 @@ export function enforceSorting(
                 enforceSortingHelper(node, node.members, sortingConfig, context);
             }
             break;
+        /* istanbul ignore next */
         default:
             // Unexpected node type -- do nothing
             break;
@@ -73,8 +74,8 @@ function enforceSortingHelper(
                 messageId: 'unsortedKeysOrValues',
                 data: {
                     entityType: getEntityTypeForDisplay(parentNode),
-                    expected: getStringFromNodeForDisplay(expectedNode),
-                    actual: getStringFromNodeForDisplay(node),
+                    expected: getStringFromNode(expectedNode, true),
+                    actual: getStringFromNode(node, true),
                 },
                 fix: fixHelper.swapNodes(nodePairs),
             });
@@ -106,7 +107,7 @@ function getCompareFn(sortingConfig: SortingConfig) {
 /**
  * Do our best to extract text from a given node type.
  */
-function getStringFromNode(node: Node): string | undefined {
+function getStringFromNode(node: Node, forDisplay = false): string | undefined {
     switch (node.type) {
         case AST_NODE_TYPES.Identifier:
             // NOTE: This includes literal undefined
@@ -122,29 +123,35 @@ function getStringFromNode(node: Node): string | undefined {
                 // NOTE: `range` is of form [start, end]
                 return a.range[0] - b.range[0];
             });
-            return children.map((child) => getStringFromNode(child) || '').join('');
+            return children
+                .map((child) => {
+                    const str = getStringFromNode(child, forDisplay);
+                    const expressions = new Set<Node>(node.expressions);
+                    if (forDisplay && expressions.has(child)) {
+                        return `\${${str}}`;
+                    } else {
+                        return str;
+                    }
+                })
+                .join('');
         }
         case AST_NODE_TYPES.Property:
-            return getStringFromNode(node.key);
+            return getStringFromNode(node.key, forDisplay);
         case AST_NODE_TYPES.MemberExpression: {
             // Get member expression path, e.g., `someObj.a.b.c`
-            const leftSide = getStringFromNode(node.object);
-            const rightSide = getStringFromNode(node.property);
+            const leftSide = getStringFromNode(node.object, forDisplay);
+            const rightSide = getStringFromNode(node.property, forDisplay);
             return `${leftSide}.${rightSide}`;
         }
         case AST_NODE_TYPES.TSPropertySignature:
             // NOTE: This generally covers 'TypeElement' types
-            return getStringFromNode(node.key);
+            return getStringFromNode(node.key, forDisplay);
         case AST_NODE_TYPES.TSEnumMember:
-            return getStringFromNode(node.id);
+            return getStringFromNode(node.id, forDisplay);
         default:
             // "Unsortable" node type
-            return undefined;
+            return forDisplay ? `<Unsortable type: ${node.type}>` : undefined;
     }
-}
-
-function getStringFromNodeForDisplay(node: Node): string | undefined {
-    return getStringFromNode(node) ?? `<Unsortable type: ${node.type}>`;
 }
 
 function getEntityTypeForDisplay(node: SortableNode): string {

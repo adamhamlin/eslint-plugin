@@ -5,10 +5,6 @@ import { name, rule } from '../../src/rules/opt-in-sort';
 import { ruleTester } from '../rule-tester';
 
 describe('Rule Tests', () => {
-    function getErrors(entityType: string, expected: string, actual: string): TestCaseError<'unsortedKeysOrValues'>[] {
-        return [{ messageId: 'unsortedKeysOrValues', data: { entityType, expected, actual } }];
-    }
-
     // NOTE: Pattern-matching to make testing in isolation easier. Add specific regexes
     // below as desired for troubleshooting
     const testPatternsToMatch: RegExp[] = [];
@@ -19,8 +15,28 @@ describe('Rule Tests', () => {
         });
     }
 
+    function getErrors(entityType: string, expected: string, actual: string): TestCaseError<'unsortedKeysOrValues'>[] {
+        return [{ messageId: 'unsortedKeysOrValues', data: { entityType, expected, actual } }];
+    }
+
+    // Simple helper to build code block from list of lines.
+    // This is needed to get proper parsing of template literals w/ expressions
+    function buildLines(lines: string[]): string {
+        return lines.join('\n');
+    }
+
     ruleTester.run(name, rule, {
         valid: filterTests([
+            {
+                code: dedent`
+                    // Basic coverage for no annotations
+                    const myObj = {
+                        b: '',
+                        a: '',
+                        c: '',
+                    };
+                `,
+            },
             {
                 code: dedent`
                     // Basic keys and values
@@ -628,68 +644,95 @@ describe('Rule Tests', () => {
                 `,
             },
             {
-                code: dedent`
-                    // Sort keys constructed from template literals
-                    const a = 'a';
-                    const b = 'b';
-                    // @sort
-                    const myObj = {
-                        [\`not-cool-dude-\${a}-first\`]: '',
-                        [\`cool-dude-\${b}\`]: '',
-                        [\`not-cool-dude-\${a}-second\`]: '',
-                        [\`cool-dude-\${a}\`]: '',
-                    };
-                `,
+                code: buildLines([
+                    '// Sort keys constructed from template literals',
+                    'const a = 1;',
+                    'const b = 1;',
+                    '// @sort',
+                    'const myObj = {',
+                    '    [`not-cool-dude-${a}-first`]: 1,',
+                    '    [`cool-dude-${b}`]: 1,',
+                    '    [`not-cool-dude-${a}-second`]: 1,',
+                    '    [`cool-dude-${a}`]: 1,',
+                    '};',
+                ]),
                 errors: getErrors('Object keys', 'cool-dude-${a}', 'not-cool-dude-${a}-first'),
-                output: dedent`
-                    // Sort keys constructed from template literals
-                    const a = 'a';
-                    const b = 'b';
-                    // @sort
-                    const myObj = {
-                        [\`cool-dude-\${a}\`]: '',
-                        [\`cool-dude-\${b}\`]: '',
-                        [\`not-cool-dude-\${a}-first\`]: '',
-                        [\`not-cool-dude-\${a}-second\`]: '',
-                    };
-                `,
+                output: buildLines([
+                    '// Sort keys constructed from template literals',
+                    'const a = 1;',
+                    'const b = 1;',
+                    '// @sort',
+                    'const myObj = {',
+                    '    [`cool-dude-${a}`]: 1,',
+                    '    [`cool-dude-${b}`]: 1,',
+                    '    [`not-cool-dude-${a}-first`]: 1,',
+                    '    [`not-cool-dude-${a}-second`]: 1,',
+                    '};',
+                ]),
             },
             {
-                code: dedent`
-                    // Combination of template literals and member expressions
-                    const a = 'zzz';
-                    const b = 'aaa';
-                    // @sort
-                    const myArr = [
-                        \`my.template.literal.\${b}\`,
-                        \`my.template.literal.\${a}\`,
-                        some.other.member.expression,
-                        my.member.expression,
-                    ];
-                `,
+                code: buildLines([
+                    '// Combination of template literals and member expressions',
+                    'const a = 1;',
+                    'const b = 1;',
+                    '// @sort',
+                    'const myArr = [',
+                    '    `my.template.literal.${b}`,',
+                    '    `my.template.literal.${a}`,',
+                    '    some.other.member.expression,',
+                    '    my.member.expression,',
+                    '];',
+                ]),
                 errors: getErrors('Array values', 'my.member.expression', 'my.template.literal.${b}'),
-                output: dedent`
-                    // Combination of template literals and member expressions
-                    const a = 'zzz';
-                    const b = 'aaa';
-                    // @sort
-                    const myArr = [
-                        my.member.expression,
-                        \`my.template.literal.\${a}\`,
-                        \`my.template.literal.\${b}\`,
-                        some.other.member.expression,
-                    ];
-                `,
+                output: buildLines([
+                    '// Combination of template literals and member expressions',
+                    'const a = 1;',
+                    'const b = 1;',
+                    '// @sort',
+                    'const myArr = [',
+                    '    my.member.expression,',
+                    '    `my.template.literal.${a}`,',
+                    '    `my.template.literal.${b}`,',
+                    '    some.other.member.expression,',
+                    '];',
+                ]),
+            },
+            {
+                code: buildLines([
+                    '// Template literals with unsortable expressions',
+                    'const a = 1;',
+                    'const b = 1;',
+                    '// @sort',
+                    'const myArr = [',
+                    '    `my.template.literal.${a}`,',
+                    '    `my.template.literal.${b ? b : a}`,',
+                    '];',
+                ]),
+                errors: getErrors(
+                    'Array values',
+                    'my.template.literal.${<Unsortable type: ConditionalExpression>}',
+                    'my.template.literal.${a}'
+                ),
+                output: buildLines([
+                    '// Template literals with unsortable expressions',
+                    'const a = 1;',
+                    'const b = 1;',
+                    '// @sort',
+                    'const myArr = [',
+                    '    `my.template.literal.${b ? b : a}`,',
+                    '    `my.template.literal.${a}`,',
+                    '];',
+                ]),
             },
             {
                 code: dedent`
                     // Sort values including primitives and "unsortable" types
                     // @sort
                     const myArray = [
-                        2, '3', null, {}, 1, undefined, false, [], /^hi/g
+                        {}, 2, '3', null, 1, undefined, false, [], /^hi/g
                     ];
                 `,
-                errors: getErrors('Array values', '/^hi/g', '2'),
+                errors: getErrors('Array values', '/^hi/g', '<Unsortable type: ObjectExpression>'),
                 output: dedent`
                     // Sort values including primitives and "unsortable" types
                     // @sort

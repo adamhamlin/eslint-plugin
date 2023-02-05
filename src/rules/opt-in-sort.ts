@@ -2,6 +2,7 @@ import { Node } from '@typescript-eslint/types/dist/generated/ast-spec';
 
 import { getAnnotationMap } from '../utils/annotations';
 import { createRule } from '../utils/create-rule';
+import { assertDefined } from '../utils/misc-utils';
 import { enforceSorting } from '../utils/sorting';
 import { SortableNode, SortingConfig, SortingState } from '../utils/sorting.types';
 
@@ -59,8 +60,10 @@ export const rule = createRule({
         function processExpressionExit(node: SortableNode): void {
             const annotationConfig = getSortingConfigFromAnnotation(node);
             if (annotationConfig && !annotationConfig.shallow) {
+                // NOTE: Can't reach here before sortingState exists, but make types/coverage happy
+                assertDefined(sortingState);
                 // Revert to previous sorting configuration
-                sortingState = sortingState?.prev;
+                sortingState = sortingState.prev;
             }
         }
 
