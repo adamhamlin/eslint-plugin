@@ -1,7 +1,7 @@
 import { Node } from '@typescript-eslint/types/dist/generated/ast-spec';
 
-import { getAnnotationMap } from '../utils/annotations';
 import { createRule } from '../utils/create-rule';
+import { FileHelper } from '../utils/file-helper';
 import { assertDefined } from '../utils/misc-utils';
 import { enforceSorting } from '../utils/sorting';
 import { SortableNode, SortingConfig, SortingState } from '../utils/sorting.types';
@@ -25,7 +25,8 @@ export const rule = createRule({
     defaultOptions: [],
 
     create(context) {
-        const annotatedLinesMap = getAnnotationMap(context, '@sort', (opts): SortingConfig => {
+        const fileHelper = new FileHelper(context.getSourceCode());
+        const annotatedLinesMap = fileHelper.getAnnotationMap('@sort', (opts): SortingConfig => {
             return {
                 keys: opts.has('keys') || !opts.has('values'),
                 values: opts.has('values') || !opts.has('keys'),

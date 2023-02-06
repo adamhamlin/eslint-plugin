@@ -5,8 +5,13 @@ import { name, rule } from '../../src/rules/forbid-pattern-everywhere';
 import { ruleTester } from '../rule-tester';
 
 describe('Rule Tests', () => {
-    function getErrors(pattern: string): TestCaseError<'disallowedPattern'>[] {
-        return [{ messageId: `disallowedPattern`, data: { pattern } }];
+    function getErrors(
+        pattern: string,
+        line: number,
+        column: number,
+        endColumn: number
+    ): TestCaseError<'disallowedPattern'>[] {
+        return [{ messageId: `disallowedPattern`, data: { pattern }, line, column, endColumn }];
     }
 
     ruleTester.run(name, rule, {
@@ -28,9 +33,33 @@ describe('Rule Tests', () => {
                     },
                 ],
             },
+            {
+                // Negative lookbehind
+                code: dedent`
+                    const blah = ctx.dataSources.enrichment.lookup();
+                `,
+                options: [
+                    {
+                        patterns: [/(?<!ctx\.)(D|d)ataSource/g],
+                    },
+                ],
+            },
         ],
 
         invalid: [
+            {
+                code: dedent`
+                    let a = {
+                        x: 4
+                    };
+                `,
+                options: [
+                    {
+                        patterns: ['x'],
+                    },
+                ],
+                errors: getErrors('/x/g', 2, 5, 6),
+            },
             {
                 code: dedent`
                     const doNotAllowBlahInVarName = 5;
@@ -40,12 +69,12 @@ describe('Rule Tests', () => {
                         patterns: ['Blah'],
                     },
                 ],
-                errors: getErrors('/Blah/'),
+                errors: getErrors('/Blah/g', 1, 17, 21),
             },
             {
                 code: dedent`
                     function doNotAllowBlahInFunctionName() {
-                    return 'ok';
+                        return 'ok';
                     };
                 `,
                 options: [
@@ -53,12 +82,12 @@ describe('Rule Tests', () => {
                         patterns: ['Blah'],
                     },
                 ],
-                errors: getErrors('/Blah/'),
+                errors: getErrors('/Blah/g', 1, 20, 24),
             },
             {
                 code: dedent`
                     function myFunc(doNotAllowBlahInParameterName) {
-                    return 'ok';
+                        return 'ok';
                     };
                 `,
                 options: [
@@ -66,7 +95,7 @@ describe('Rule Tests', () => {
                         patterns: ['Blah'],
                     },
                 ],
-                errors: getErrors('/Blah/'),
+                errors: getErrors('/Blah/g', 1, 27, 31),
             },
             {
                 code: dedent`
@@ -79,7 +108,7 @@ describe('Rule Tests', () => {
                         patterns: ['Blah'],
                     },
                 ],
-                errors: getErrors('/Blah/'),
+                errors: getErrors('/Blah/g', 2, 26, 30),
             },
             {
                 code: dedent`
@@ -90,7 +119,12 @@ describe('Rule Tests', () => {
                         patterns: ['Blah'],
                     },
                 ],
-                errors: getErrors('/Blah/'),
+                errors: [
+                    // One error for each instance
+                    ...getErrors('/Blah/g', 1, 57, 61),
+                    ...getErrors('/Blah/g', 1, 61, 65),
+                    ...getErrors('/Blah/g', 1, 65, 69),
+                ],
             },
             {
                 code: dedent`
@@ -105,35 +139,7 @@ describe('Rule Tests', () => {
                         patterns: ['Blah'],
                     },
                 ],
-                errors: getErrors('/Blah/'),
-            },
-            {
-                code: dedent`
-                class MyClass {
-                    constructor(arg) {
-                        this.doNotAllowBlahInMemberVar = arg;
-                    }
-                };
-            `,
-                options: [
-                    {
-                        patterns: ['Blah'],
-                    },
-                ],
-                errors: getErrors('/Blah/'),
-            },
-            {
-                code: dedent`
-                    const myObj = {
-                        doNotAllowBlahInPropertyName: 'myValue'
-                    };
-                `,
-                options: [
-                    {
-                        patterns: ['Blah'],
-                    },
-                ],
-                errors: getErrors('/Blah/'),
+                errors: getErrors('/Blah/g', 1, 17, 21),
             },
             {
                 code: dedent`
@@ -144,46 +150,30 @@ describe('Rule Tests', () => {
                         patterns: [/BLAH/i],
                     },
                 ],
-                errors: getErrors('/BLAH/i'),
+                errors: getErrors('/BLAH/gi', 1, 17, 21),
             },
             {
+                // Negative lookbehind (just one error expected)
                 code: dedent`
-                    interface BlahInterface {
-                        someProp: string;
-                    }
+                    const dataSources = ctx.dataSources;
                 `,
                 options: [
                     {
-                        patterns: ['Blah'],
+                        patterns: [/(?<!ctx\.)(D|d)ataSource/],
                     },
                 ],
-                errors: getErrors('/Blah/'),
+                errors: getErrors('/(?<!ctx\\.)(D|d)ataSource/g', 1, 7, 17),
             },
             {
                 code: dedent`
-                    type BlahType = {
-                        someProp: string;
-                    };
+                    // Can't even put Blah in a comment!
                 `,
                 options: [
                     {
-                        patterns: ['Blah'],
+                        patterns: [/Blah/],
                     },
                 ],
-                errors: getErrors('/Blah/'),
-            },
-            {
-                code: dedent`
-                    interface MyInterface {
-                        someBlahProp: string;
-                    }
-                `,
-                options: [
-                    {
-                        patterns: ['Blah'],
-                    },
-                ],
-                errors: getErrors('/Blah/'),
+                errors: getErrors('/Blah/g', 1, 19, 23),
             },
         ],
     });
