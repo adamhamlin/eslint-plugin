@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/adamhamlin/eslint-plugin/compare/v0.1.2...v0.2.0) (2023-02-06)
+
+
+### Features
+
+* Add `opt-in-sort` rule ([#5](https://github.com/adamhamlin/eslint-plugin/issues/5)) ([df80288](https://github.com/adamhamlin/eslint-plugin/commit/df802881ef16d9169f302206aa605cd8cd7709de))
+* Improve `forbid-pattern-everywhere` behavior ([#6](https://github.com/adamhamlin/eslint-plugin/issues/6)) ([c2acc0b](https://github.com/adamhamlin/eslint-plugin/commit/c2acc0bdaa29dc5cf7e66e6857d7a55b18a76625))
+
 ### [0.1.2](https://github.com/adamhamlin/eslint-plugin/compare/v0.1.1...v0.1.2) (2023-01-17)
 
 
