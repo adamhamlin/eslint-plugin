@@ -1,6 +1,9 @@
-import { TSESTree } from '@typescript-eslint/utils';
+import { TSESTree } from '@typescript-eslint/types';
+import matchAll from 'string.prototype.matchall';
 
 import { createRule } from '../utils/create-rule';
+import { FileHelper } from '../utils/file-helper';
+import { assertDefined } from '../utils/misc-utils';
 
 export const name = 'forbid-pattern-everywhere';
 export const rule = createRule({
@@ -8,12 +11,12 @@ export const rule = createRule({
     meta: {
         type: 'layout',
         messages: {
-            disallowedPattern: `Entity matches the following disallowed pattern: {{pattern}}`,
+            disallowedPattern: `Text matches the following disallowed pattern: {{pattern}}`,
         },
         docs: {
             description: 'disallow specified patterns everywhere (in identifiers, strings, etc.)',
             recommended: false,
-            requiresTypeChecking: true,
+            requiresTypeChecking: false,
         },
         fixable: undefined,
         schema: [
@@ -33,46 +36,45 @@ export const rule = createRule({
     create(context, optionsWithDefault) {
         const options = optionsWithDefault[0];
 
+        const fileHelper = new FileHelper(context.getSourceCode());
         const patternRegexes = options.patterns.map((pattern) => {
-            return pattern instanceof RegExp ? pattern : new RegExp(pattern);
+            if (pattern instanceof RegExp) {
+                // Force this regex to be global
+                return pattern.global ? pattern : new RegExp(pattern.source, `${pattern.flags}g`);
+            } else {
+                return new RegExp(pattern, 'g');
+            }
         });
 
-        /**
-         * @param entity the name/string literal/etc to chek
-         * @param loc the location of the AST node
-         */
-        function checkIfEntityIsAllowed(
-            entity: string | TSESTree.Literal['value'],
-            loc: TSESTree.SourceLocation
-        ): void {
-            if (typeof entity === 'string') {
-                for (const regex of patternRegexes) {
-                    if (regex.test(entity)) {
-                        context.report({
-                            loc,
-                            messageId: 'disallowedPattern',
-                            data: {
-                                pattern: regex.toString(),
-                            },
-                        });
-                        break;
-                    }
+        function enforceForbiddenPatterns(): void {
+            for (const regex of patternRegexes) {
+                const matches = matchAll(fileHelper.sourceText, regex);
+                for (const match of matches) {
+                    context.report({
+                        loc: getMatchSourceLocation(match),
+                        messageId: 'disallowedPattern',
+                        data: {
+                            pattern: regex.toString(),
+                        },
+                    });
                 }
             }
         }
 
+        function getMatchSourceLocation(match: RegExpMatchArray): Readonly<TSESTree.SourceLocation> {
+            const matchText = match[0];
+            const startIdx = match.index;
+            assertDefined(startIdx); // don't know how this can be undefined if match is defined
+            const endIdx = startIdx + matchText.length;
+
+            return {
+                start: fileHelper.getPositionFromIndex(startIdx),
+                end: fileHelper.getPositionFromIndex(endIdx),
+            };
+        }
+
         return {
-            // NOTE: Using `Identifier` is probably overkill, since only need to check when identifiers are declared/imported/etc, not every usage. But
-            // this is simpler/more maintainable as don't have to enumerate a bunch more node types. Re-evaluate if performance negatively impacted.
-            Identifier: (node) => {
-                checkIfEntityIsAllowed(node.name, node.loc);
-            },
-            Literal: (node) => {
-                checkIfEntityIsAllowed(node.value, node.loc);
-            },
-            TemplateElement: (node) => {
-                checkIfEntityIsAllowed(node.value.cooked, node.loc);
-            },
+            Program: (_node) => enforceForbiddenPatterns(),
         };
     },
 });
