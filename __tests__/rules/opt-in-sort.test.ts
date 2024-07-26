@@ -236,6 +236,23 @@ describe('Rule Tests', () => {
             },
             {
                 code: dedent`
+                    // Sort union
+                    // @sort
+                    type MyUnion = 'a' | 'b' | 'c';
+                `,
+            },
+            {
+                code: dedent`
+                    // Sort union with type references
+                    type A = 'a';
+                    type B = 'b';
+                    type C = 'c';
+                    // @sort
+                    type MyUnion = A | B | C;
+                `,
+            },
+            {
+                code: dedent`
                     // Sort interface
                     // @sort
                     interface MyInterface {
@@ -599,6 +616,38 @@ describe('Rule Tests', () => {
                         B = 'b',
                         C = 'c',
                     }
+                `,
+            },
+            {
+                code: dedent`
+                    // Sort union
+                    // @sort
+                    type MyUnion = 'b' | 'c' | 'a';
+                `,
+                errors: getErrors('Union values', 'a', 'b'),
+                output: dedent`
+                    // Sort union
+                    // @sort
+                    type MyUnion = 'a' | 'b' | 'c';
+                `,
+            },
+            {
+                code: dedent`
+                    // Sort union with type references
+                    type A = 'a';
+                    type B = 'b';
+                    type C = 'c';
+                    // @sort
+                    type MyUnion = B | A | C;
+                `,
+                errors: getErrors('Union values', 'A', 'B'),
+                output: dedent`
+                    // Sort union with type references
+                    type A = 'a';
+                    type B = 'b';
+                    type C = 'c';
+                    // @sort
+                    type MyUnion = A | B | C;
                 `,
             },
             {

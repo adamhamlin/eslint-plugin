@@ -1,5 +1,6 @@
 import { AST_NODE_TYPES, Expression, Node } from '@typescript-eslint/types/dist/generated/ast-spec';
 import { RuleContext } from '@typescript-eslint/utils/dist/ts-eslint';
+import { match } from 'ts-pattern';
 
 import { FixHelper } from './fix';
 import { zip } from './misc-utils';
@@ -18,39 +19,40 @@ export function enforceSorting(
         return;
     }
 
-    switch (node.type) {
-        case AST_NODE_TYPES.ObjectExpression:
+    match(node)
+        .with({ type: AST_NODE_TYPES.ObjectExpression }, (matched) => {
             if (sortingConfig.keys) {
-                enforceSortingHelper(node, node.properties, sortingConfig, context);
+                enforceSortingHelper(matched, matched.properties, sortingConfig, context);
             }
-            break;
-        case AST_NODE_TYPES.ArrayExpression:
+        })
+        .with({ type: AST_NODE_TYPES.ArrayExpression }, (matched) => {
             if (sortingConfig.values) {
                 // A null element only occurs in sparse array; we'll just ignore
-                const elements = node.elements.filter((el): el is Expression => el !== null);
-                enforceSortingHelper(node, elements, sortingConfig, context);
+                const elements = matched.elements.filter((el): el is Expression => el !== null);
+                enforceSortingHelper(matched, elements, sortingConfig, context);
             }
-            break;
-        case AST_NODE_TYPES.TSInterfaceDeclaration:
+        })
+        .with({ type: AST_NODE_TYPES.TSInterfaceDeclaration }, (matched) => {
             if (sortingConfig.keys) {
-                enforceSortingHelper(node, node.body.body, sortingConfig, context);
+                enforceSortingHelper(matched, matched.body.body, sortingConfig, context);
             }
-            break;
-        case AST_NODE_TYPES.TSTypeLiteral:
+        })
+        .with({ type: AST_NODE_TYPES.TSTypeLiteral }, (matched) => {
             if (sortingConfig.keys) {
-                enforceSortingHelper(node, node.members, sortingConfig, context);
+                enforceSortingHelper(matched, matched.members, sortingConfig, context);
             }
-            break;
-        case AST_NODE_TYPES.TSEnumDeclaration:
+        })
+        .with({ type: AST_NODE_TYPES.TSEnumDeclaration }, (matched) => {
             if (sortingConfig.values) {
-                enforceSortingHelper(node, node.members, sortingConfig, context);
+                enforceSortingHelper(matched, matched.members, sortingConfig, context);
             }
-            break;
-        /* istanbul ignore next */
-        default:
-            // Unexpected node type -- do nothing
-            break;
-    }
+        })
+        .with({ type: AST_NODE_TYPES.TSUnionType }, (matched) => {
+            if (sortingConfig.values) {
+                enforceSortingHelper(matched, matched.types, sortingConfig, context);
+            }
+        })
+        .exhaustive();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,63 +110,74 @@ function getCompareFn(sortingConfig: SortingConfig) {
  * Do our best to extract text from a given node type.
  */
 function getStringFromNode(node: Node, forDisplay = false): string | undefined {
-    switch (node.type) {
-        case AST_NODE_TYPES.Identifier:
-            // NOTE: This includes literal undefined
-            return node.name;
-        case AST_NODE_TYPES.Literal:
-            // NOTE: No special treatment of null, true, false, etc
-            return node.value?.toString() ?? node.raw;
-        case AST_NODE_TYPES.TemplateElement:
-            return node.value.cooked;
-        case AST_NODE_TYPES.TemplateLiteral: {
-            // Order the consituent parts from left to right
-            const children = [...node.quasis, ...node.expressions].sort((a, b) => {
-                // NOTE: `range` is of form [start, end]
-                return a.range[0] - b.range[0];
-            });
-            return children
-                .map((child) => {
-                    const str = getStringFromNode(child, forDisplay);
-                    const expressions = new Set<Node>(node.expressions);
-                    if (forDisplay && expressions.has(child)) {
-                        return `\${${str}}`;
-                    } else {
-                        return str;
-                    }
-                })
-                .join('');
-        }
-        case AST_NODE_TYPES.Property:
-            return getStringFromNode(node.key, forDisplay);
-        case AST_NODE_TYPES.MemberExpression: {
-            // Get member expression path, e.g., `someObj.a.b.c`
-            const leftSide = getStringFromNode(node.object, forDisplay);
-            const rightSide = getStringFromNode(node.property, forDisplay);
-            return `${leftSide}.${rightSide}`;
-        }
-        case AST_NODE_TYPES.TSPropertySignature:
-            // NOTE: This generally covers 'TypeElement' types
-            return getStringFromNode(node.key, forDisplay);
-        case AST_NODE_TYPES.TSEnumMember:
-            return getStringFromNode(node.id, forDisplay);
-        default:
-            // "Unsortable" node type
-            return forDisplay ? `<Unsortable type: ${node.type}>` : undefined;
-    }
+    return (
+        match(node)
+            // UNWRAPPED/ATOMIC TYPES
+            .with({ type: AST_NODE_TYPES.Identifier }, (matched) => {
+                return matched.name;
+            })
+            .with({ type: AST_NODE_TYPES.Literal }, (matched) => {
+                // NOTE: No special treatment of null, true, false, etc
+                return matched.value?.toString() ?? matched.raw;
+            })
+            .with({ type: AST_NODE_TYPES.TemplateElement }, (matched) => {
+                return matched.value.cooked;
+            })
+            // WRAPPED TYPES
+            .with({ type: AST_NODE_TYPES.TSLiteralType }, (matched) => {
+                return getStringFromNode(matched.literal, forDisplay);
+            })
+            .with({ type: AST_NODE_TYPES.TemplateLiteral }, (matched) => {
+                // Order the consituent parts from left to right
+                const children = [...matched.quasis, ...matched.expressions].sort((a, b) => {
+                    // NOTE: `range` is of form [start, end]
+                    return a.range[0] - b.range[0];
+                });
+                return children
+                    .map((child) => {
+                        const str = getStringFromNode(child, forDisplay);
+                        const expressions = new Set<Node>(matched.expressions);
+                        if (forDisplay && expressions.has(child)) {
+                            return `\${${str}}`;
+                        } else {
+                            return str;
+                        }
+                    })
+                    .join('');
+            })
+            .with({ type: AST_NODE_TYPES.Property }, (matched) => {
+                return getStringFromNode(matched.key, forDisplay);
+            })
+            .with({ type: AST_NODE_TYPES.MemberExpression }, (matched) => {
+                // Get member expression path, e.g., `someObj.a.b.c`
+                const leftSide = getStringFromNode(matched.object, forDisplay);
+                const rightSide = getStringFromNode(matched.property, forDisplay);
+                return `${leftSide}.${rightSide}`;
+            })
+            .with({ type: AST_NODE_TYPES.TSPropertySignature }, (matched) => {
+                // NOTE: This generally covers 'TypeElement' types
+                return getStringFromNode(matched.key, forDisplay);
+            })
+            .with({ type: AST_NODE_TYPES.TSTypeReference }, (matched) => {
+                return getStringFromNode(matched.typeName, forDisplay);
+            })
+            .with({ type: AST_NODE_TYPES.TSEnumMember }, (matched) => {
+                return getStringFromNode(matched.id, forDisplay);
+            })
+            .otherwise(() => {
+                // "Unsortable" node type
+                return forDisplay ? `<Unsortable type: ${node.type}>` : undefined;
+            })
+    );
 }
 
 function getEntityTypeForDisplay(node: SortableNode): string {
-    switch (node.type) {
-        case AST_NODE_TYPES.ObjectExpression:
-            return 'Object keys';
-        case AST_NODE_TYPES.ArrayExpression:
-            return 'Array values';
-        case AST_NODE_TYPES.TSInterfaceDeclaration:
-            return 'Interface keys';
-        case AST_NODE_TYPES.TSTypeLiteral:
-            return 'Type literal keys';
-        case AST_NODE_TYPES.TSEnumDeclaration:
-            return 'Enum values';
-    }
+    return match(node.type)
+        .with(AST_NODE_TYPES.ObjectExpression, () => 'Object keys')
+        .with(AST_NODE_TYPES.ArrayExpression, () => 'Array values')
+        .with(AST_NODE_TYPES.TSInterfaceDeclaration, () => 'Interface keys')
+        .with(AST_NODE_TYPES.TSTypeLiteral, () => 'Type literal keys')
+        .with(AST_NODE_TYPES.TSEnumDeclaration, () => 'Enum values')
+        .with(AST_NODE_TYPES.TSUnionType, () => 'Union values')
+        .exhaustive();
 }

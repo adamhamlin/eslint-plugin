@@ -5,6 +5,7 @@ import {
     TSEnumDeclaration,
     TSInterfaceDeclaration,
     TSTypeLiteral,
+    TSUnionType,
 } from '@typescript-eslint/types/dist/generated/ast-spec';
 
 export type SortableNode =
@@ -12,7 +13,8 @@ export type SortableNode =
     | ArrayExpression
     | TSEnumDeclaration
     | TSInterfaceDeclaration
-    | TSTypeLiteral;
+    | TSTypeLiteral
+    | TSUnionType;
 
 export interface SortingState {
     config: SortingConfig;

@@ -48,7 +48,8 @@
     },
     "dependencies": {
         "@typescript-eslint/utils": "^5.0.0",
-        "string.prototype.matchall": "^4.0.8"
+        "string.prototype.matchall": "^4.0.8",
+        "ts-pattern": "^4.1.3"
     },
     "devDependencies": {
         "@adamhamlin/eslint-config": "^1.3.0",

@@ -13,6 +13,7 @@ This rule will alarm when any of the following structures are both (1) preceded 
 -   TS Enum
 -   TS Interface
 -   TS Type Literal
+-   TS Union
 
 > _Note that sorting will also be enforced on any nested structures. However, this behavior can be configured--see the [Options](#options) section._
 
@@ -35,6 +36,9 @@ enum MyEnum {
     A = 'a',
     C = 'c',
 }
+
+// @sort
+type MyUnion = 'b' | 'a' | 'c';
 
 // @sort
 interface MyInterface {
@@ -91,6 +95,8 @@ The default sorting behavior is as follows:
         `my.template.literal.${b}`,
         some.other.member.expression,
     ];
+    // @sort
+    type MyUnion = TypeA | TypeB | TypeC;
     ```
 
 ### Options

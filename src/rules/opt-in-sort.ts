@@ -83,6 +83,8 @@ export const rule = createRule({
             'TSTypeLiteral:exit': processExpressionExit,
             TSEnumDeclaration: processExpressionEnter,
             'TSEnumDeclaration:exit': processExpressionExit,
+            TSUnionType: processExpressionEnter,
+            'TSUnionType:exit': processExpressionExit,
         };
     },
 });
