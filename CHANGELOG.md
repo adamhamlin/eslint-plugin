@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0](https://github.com/adamhamlin/eslint-plugin/compare/v0.2.0...v1.0.0) (2024-07-26)
+
+
+### Features
+
+* **opt-in-sort:** allow sort of TS unions ([#8](https://github.com/adamhamlin/eslint-plugin/issues/8)) ([ff005eb](https://github.com/adamhamlin/eslint-plugin/commit/ff005ebab98c765c1e1ef4578952430765a6c853))
+
 ## [0.2.0](https://github.com/adamhamlin/eslint-plugin/compare/v0.1.2...v0.2.0) (2023-02-06)
 
 
